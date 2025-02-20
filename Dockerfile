@@ -87,7 +87,9 @@ RUN ARCH=$(uname -m) && \
     echo "PHP Extension Directory: $PHP_EXTENSION_DIR" && \
     echo "PHP Version: $PHP_VERSION" && \
     ls /tmp/ioncube && \
-    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR
+    ls -ld $PHP_EXTENSION_DIR && \
+    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR || echo "Error: Failed to copy ionCube Loader to $PHP_EXTENSION_DIR"
+
 
 # Install cloudflared based on architecture (amd64 or arm64)
 RUN ARCH=$(uname -m) && \
