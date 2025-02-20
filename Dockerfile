@@ -1,13 +1,15 @@
-FROM debian:bookworm-slim
+FROM --platform=$TARGETOS/$TARGETARCH debian:bookworm-slim
 
-ARG PHP_VERSION="8.3"
+LABEL author="Zari0" maintainer="zarti0@zarti.cfd"
 
-ENV DEBIAN_FRONTEND noninteractive
+ARG PHP_VERSION="8.1"
 
-# Installation d'Apache et PHP
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Installation d'Apache et PHP 8.1 explicitly
 RUN apt-get update \
     && apt-get upgrade -y \
-    && apt-get install -y apt-transport-https lsb-release ca-certificates wget apache2 iproute2 \
+    && apt-get install -y apt-transport-https lsb-release curl unzip zip ca-certificates wget apache2 iproute2 \
     && wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
     && echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list \
     && apt-get update \
@@ -18,7 +20,7 @@ RUN apt-get update \
         php${PHP_VERSION}-cli \
         php${PHP_VERSION}-common \
         php${PHP_VERSION}-mysqlnd \
-        php${PHP_VERSION}-PDO \
+        php${PHP_VERSION}-pdo \
         php${PHP_VERSION}-xml \
         php${PHP_VERSION}-bcmath \
         php${PHP_VERSION}-calendar \
@@ -43,13 +45,13 @@ RUN apt-get update \
         php${PHP_VERSION}-odbc \
         php${PHP_VERSION}-pcov \
         php${PHP_VERSION}-pgsql \
-        php${PHP_VERSION}-Phar \
+        php${PHP_VERSION}-phar \
         php${PHP_VERSION}-posix \
         php${PHP_VERSION}-ps \
         php${PHP_VERSION}-pspell \
         php${PHP_VERSION}-readline \
         php${PHP_VERSION}-shmop \
-        php${PHP_VERSION}-SimpleXML \
+        php${PHP_VERSION}-simplexml \
         php${PHP_VERSION}-soap \
         php${PHP_VERSION}-sockets \
         php${PHP_VERSION}-sqlite3 \
@@ -66,9 +68,39 @@ RUN apt-get update \
         php${PHP_VERSION}-inotify \
         php${PHP_VERSION}-maxminddb \
         php${PHP_VERSION}-protobuf \
-        php${PHP_VERSION}-OPcache \
+        php${PHP_VERSION}-opcache \
     && apt-get purge -y --auto-remove \
     && rm -rf /var/lib/apt/lists/*
+
+# Install ionCube Loader based on architecture (amd64 or arm64)
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        wget -O /tmp/ioncube_loaders.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        wget -O /tmp/ioncube_loaders.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_aarch64.tar.gz; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    tar -zxvf /tmp/ioncube_loaders.tar.gz -C /tmp/ && \
+    PHP_EXTENSION_DIR=$(php -i | grep extension_dir | awk '{print $5}') && \
+    PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;") && \
+    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR && \
+    echo "zend_extension=$PHP_EXTENSION_DIR/ioncube_loader_lin_${PHP_VERSION}.so" > /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini && \
+    ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/cli/conf.d/00-ioncube.ini && \
+    ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/fpm/conf.d/00-ioncube.ini && \
+    rm -rf /tmp/ioncube_loaders.tar.gz /tmp/ioncube
+
+# Install cloudflared based on architecture (amd64 or arm64)
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        wget -O /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        wget -O /tmp/cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64.deb; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    dpkg -i /tmp/cloudflared.deb && \
+    rm /tmp/cloudflared.deb
 
 RUN useradd -m -d /home/container/ -s /bin/bash container
 ENV USER=container HOME=/home/container
