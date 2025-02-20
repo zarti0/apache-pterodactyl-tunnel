@@ -87,7 +87,7 @@ RUN ARCH=$(uname -m) && \
     echo "PHP Extension Directory: $PHP_EXTENSION_DIR" && \
     echo "PHP Version: $PHP_VERSION" && \
     ls /tmp/ioncube && \
-    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR
+    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR \
     echo "zend_extension=$PHP_EXTENSION_DIR/ioncube_loader_lin_${PHP_VERSION}.so" > /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini && \
     ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/cli/conf.d/00-ioncube.ini && \
     ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/fpm/conf.d/00-ioncube.ini && \
