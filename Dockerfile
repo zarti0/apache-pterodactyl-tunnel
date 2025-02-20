@@ -84,11 +84,16 @@ RUN ARCH=$(uname -m) && \
     tar -zxvf /tmp/ioncube_loaders.tar.gz -C /tmp/ && \
     PHP_EXTENSION_DIR=$(php -i | grep extension_dir | awk '{print $5}') && \
     PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;") && \
-    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR && \
+    echo "PHP Extension Directory: $PHP_EXTENSION_DIR" && \
+    echo "PHP Version: $PHP_VERSION" && \
+    ls /tmp/ioncube && \
+    cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR
     echo "zend_extension=$PHP_EXTENSION_DIR/ioncube_loader_lin_${PHP_VERSION}.so" > /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini && \
     ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/cli/conf.d/00-ioncube.ini && \
     ln -s /etc/php/${PHP_VERSION}/mods-available/00-ioncube.ini /etc/php/${PHP_VERSION}/fpm/conf.d/00-ioncube.ini && \
     rm -rf /tmp/ioncube_loaders.tar.gz /tmp/ioncube
+
+
 
 # Install cloudflared based on architecture (amd64 or arm64)
 RUN ARCH=$(uname -m) && \
