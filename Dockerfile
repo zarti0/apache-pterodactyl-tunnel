@@ -73,6 +73,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install ionCube Loader based on architecture (amd64 or arm64)
+# Install ionCube Loader based on architecture (amd64 or arm64)
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then \
         wget -O /tmp/ioncube_loaders.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz; \
@@ -82,14 +83,16 @@ RUN ARCH=$(uname -m) && \
         echo "Unsupported architecture: $ARCH" && exit 1; \
     fi && \
     tar -zxvf /tmp/ioncube_loaders.tar.gz -C /tmp/ && \
-    PHP_EXTENSION_DIR=$(php -i | grep extension_dir | awk '{print $5}') && \
+    PHP_EXTENSION_DIR=$(php -i | grep "^extension_dir" | awk '{print $3}') && \
     PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;") && \
     echo "PHP Extension Directory: $PHP_EXTENSION_DIR" && \
     echo "PHP Version: $PHP_VERSION" && \
     ls /tmp/ioncube && \
-    ls -ld $PHP_EXTENSION_DIR && \
     cp /tmp/ioncube/ioncube_loader_lin_${PHP_VERSION}.so $PHP_EXTENSION_DIR || echo "Error: Failed to copy ionCube Loader to $PHP_EXTENSION_DIR"
 
+# Enable ionCube loader in PHP
+RUN echo "zend_extension=$(php -i | grep extension_dir | awk '{print $3}')/ioncube_loader_lin_${PHP_VERSION}.so" > /etc/php/${PHP_VERSION}/mods-available/ioncube.ini && \
+    phpenmod ioncube
 
 # Install cloudflared based on architecture (amd64 or arm64)
 RUN ARCH=$(uname -m) && \
