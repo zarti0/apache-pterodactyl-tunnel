@@ -80,3 +80,5 @@ fi
 # Tail Apache access logs
 echo -e "\033[0;37m[Apache2] Showing Apache logs...\033[0m"
 tail -f /home/container/logs/access.log
+
+

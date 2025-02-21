@@ -7,7 +7,7 @@
     "exported_at": "2025-02-21T16:43:08+01:00",
     "name": "Apache2 + PHP + CLOUDFLARE",
     "author": "zari0@zarti.cfd",
-    "description": "Apache is a free and open-source web server software that powers about 46% of the world's websites. The official name is Apache HTTP Server and it is maintained and developed by the Apache Software Foundation. with cloudflare tunnel",
+    "description": "Apache is  a free and open-source web server software that powers about 46% of the world's websites. The official name is Apache HTTP Server and it is maintained and developed by the Apache Software Foundation. with cloudflare tunnel",
     "features": null,
     "docker_images": {
         "PHP 8.1": "ghcr.io\/zarti0\/apache2:8.1",
