@@ -10,7 +10,7 @@ echo -e "\033[0;34m────────────────────�
 echo -e "\033[0;35m[Cleanup] Removing temporary files\033[0m"
 rm -rf /home/container/tmp/*
 rm -rf /home/container/apache2/socks/*
-
+rm -rf /home/container/apache2.pid
 
 # Clean up PID files
 echo -e "\033[0;35m[Cleanup] Removing old PID files\033[0m"
@@ -48,18 +48,17 @@ echo -e " "
 echo -e "\033[0;37m[Apache2] Loading PHP version\033[0m"
 PHP_VERSION=$(cat "/home/container/php_version.txt")
 
-# [Docker] Starting PHP-FPM
+# Start PHP-FPM with custom PHP configuration file
 echo -e "\033[0;37m[Apache2] Starting PHP-FPM (PHP $PHP_VERSION)\033[0m"
-php-fpm$PHP_VERSION -c /home/container/php/php.ini --fpm-config /home/container/php/php-fpm.conf --daemonize > /dev/null 2>&1
+php-fpm$PHP_VERSION -c /home/container/php/php.ini --fpm-config /home/container/php/php-fpm.conf --pid /home/container/logs/php-fpm.pid --daemonize
+ > /dev/null 2>&1
 
-# Check if PHP-FPM started successfully by looking for the .pid file in /home/container/logs/
+# Check if PHP-FPM started successfully
 if [ -f /home/container/logs/php-fpm.pid ]; then
     echo -e "\033[0;32m[Apache2] PHP-FPM started successfully (PID: $(cat /home/container/logs/php-fpm.pid))\033[0m"
 else
     echo -e "\033[0;31m[Apache2] PHP-FPM failed to start.\033[0m"
 fi
-
-echo -e "\033[0;37m[Apache2] Loading Apache2 \033[0m"
 
 # [Docker] Starting Apache
 echo -e "\033[0;37m[Apache2] Starting Apache\033[0m"
@@ -67,24 +66,17 @@ echo -e "\033[0;37m[Apache2] Starting Apache\033[0m"
 # Source the envvars file to load Apache environment variables
 source /home/container/apache2/envvars
 
-# Start Apache and show logs in the console
+# Start Apache and create the PID file in /home/container/logs/
 apache2 -f /home/container/apache2/apache2.conf -DFOREGROUND &
-
-# Check if Apache started successfully by looking for the .pid file in /home/container/logs/
-
 sleep 2
+
+# Check if Apache started successfully
 if [ -f /home/container/logs/apache2.pid ]; then
-	
     echo -e "\033[0;32m[Apache2] Apache started successfully (PID: $(cat /home/container/logs/apache2.pid))\033[0m"
 else
     echo -e "\033[0;31m[Apache2] Apache failed to start.\033[0m"
 fi
 
-# Success message
-echo -e "\033[0;32m[Apache2] WebServer successfully launched!\033[0m"
-
 # Tail Apache access logs
 echo -e "\033[0;37m[Apache2] Showing Apache logs...\033[0m"
 tail -f /home/container/logs/access.log
-
-
