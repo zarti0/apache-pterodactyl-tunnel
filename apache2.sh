@@ -50,12 +50,12 @@ PHP_VERSION=$(cat "/home/container/php_version.txt")
 
 # Start PHP-FPM with custom PHP configuration file
 echo -e "\033[0;37m[Apache2] Starting PHP-FPM (PHP $PHP_VERSION)\033[0m"
-php-fpm$PHP_VERSION -c /home/container/php/php.ini --fpm-config /home/container/php/php-fpm.conf --pid /home/container/logs/php-fpm.pid --daemonize
+php-fpm$PHP_VERSION -c /home/container/php/php.ini --fpm-config /home/container/php/php-fpm.conf --pid /home/container/tmp/php-fpm.pid --daemonize
  > /dev/null 2>&1
 
 # Check if PHP-FPM started successfully
-if [ -f /home/container/logs/php-fpm.pid ]; then
-    echo -e "\033[0;32m[Apache2] PHP-FPM started successfully (PID: $(cat /home/container/logs/php-fpm.pid))\033[0m"
+if [ -f /home/container/tmp/php-fpm.pid ]; then
+    echo -e "\033[0;32m[Apache2] PHP-FPM started successfully (PID: $(cat /home/container/tmp/php-fpm.pid))\033[0m"
 else
     echo -e "\033[0;31m[Apache2] PHP-FPM failed to start.\033[0m"
 fi
@@ -71,8 +71,8 @@ apache2 -f /home/container/apache2/apache2.conf -DFOREGROUND &
 sleep 2
 
 # Check if Apache started successfully
-if [ -f /home/container/logs/apache2.pid ]; then
-    echo -e "\033[0;32m[Apache2] Apache started successfully (PID: $(cat /home/container/logs/apache2.pid))\033[0m"
+if [ -f /home/container/tmp/apache2.pid ]; then
+    echo -e "\033[0;32m[Apache2] Apache started successfully (PID: $(cat /home/container/tmp/apache2.pid))\033[0m"
 else
     echo -e "\033[0;31m[Apache2] Apache failed to start.\033[0m"
 fi
