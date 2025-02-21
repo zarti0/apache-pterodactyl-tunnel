@@ -1,0 +1,95 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2025-02-21T16:43:08+01:00",
+    "name": "Apache2 + PHP + CLOUDFLARE",
+    "author": "zari0@zarti.cfd",
+    "description": "Apache is a free and open-source web server software that powers about 46% of the world's websites. The official name is Apache HTTP Server and it is maintained and developed by the Apache Software Foundation. with cloudflare tunnel",
+    "features": null,
+    "docker_images": {
+        "PHP 8.1": "ghcr.io\/zarti0\/apache2:8.1",
+        "PHP 8.2": "ghcr.io\/zarti0\/apache2:8.2",
+        "PHP 8.3": "ghcr.io\/zarti0\/apache2:8.3",
+        "PHP 8.4": "ghcr.io\/zarti0\/apache2:8.4"
+    },
+    "file_denylist": [],
+    "startup": "echo \"${CLOUDFLARED_TOKEN}\" > \"cloudflared_token.txt\"; echo \"${CLOUDFLARE_TUNNEL_DOMAIN}\" > \"tunnel_domain.txt\"; {{STARTUP_COMMAND_CLOUDFLARED}} && {{STARTUP_CMD}}",
+    "config": {
+        "files": "{}",
+        "startup": "{}",
+        "logs": "{}",
+        "stop": "^C^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!\/bin\/bash\r\n\r\necho -e \"[SETUP] Install packages\"\r\napt-get update -qq > \/dev\/null 2>&1 && apt-get install -qq -y git wget > \/dev\/null 2>&1\r\n\r\necho -e \"[SETUP] Change directory to \/mnt\/server\"\r\ncd \/mnt\/server\r\n\r\necho -e \"[SETUP] Create necessary folders\"\r\nmkdir -p \/mnt\/server\/logs\r\nmkdir -p \/mnt\/server\/tmp\r\nmkdir -p \/mnt\/server\/www\r\n\r\necho -e \"[SETUP] Cloning repository from GitHub\"\r\ngit clone https:\/\/github.com\/zarti0\/apache-pterodactyl-tunnel.git .\/gtemp > \/dev\/null 2>&1\r\n\r\necho -e \"[SETUP] Copying files from the cloned repository\"\r\ncp -r .\/gtemp\/apache2 .\r\ncp -r .\/gtemp\/php .\r\ncp .\/gtemp\/apache2.sh .\r\ncp .\/gtemp\/cloudflare.sh .\r\necho -e \"[SETUP] Removing temporary folder\"\r\nrm -R .\/gtemp\r\n\r\necho -e \"[SETUP] Setting permissions for scripts\"\r\nchmod +x apache2.sh\r\nchmod +x cloudflare.sh\r\n\r\nOLD_VERSION=\"8.3\"\r\necho -e \"[SETUP] Replacing PHP version references\"\r\nmv \/mnt\/server\/apache2\/mods-available\/php${OLD_VERSION}.conf \/mnt\/server\/apache2\/mods-available\/php${PHP_VERSION}.conf\r\nmv \/mnt\/server\/apache2\/mods-available\/php${OLD_VERSION}.load \/mnt\/server\/apache2\/mods-available\/php${PHP_VERSION}.load\r\n\r\nsed -i \"s|LoadModule php_module \/usr\/lib\/apache2\/modules\/libphp${OLD_VERSION}.so|LoadModule php_module \/usr\/lib\/apache2\/modules\/libphp${PHP_VERSION}.so|\" \/mnt\/server\/apache2\/mods-available\/php${PHP_VERSION}.load\r\n\r\nmv \/mnt\/server\/apache2\/mods-enabled\/php${OLD_VERSION}.conf \/mnt\/server\/apache2\/mods-enabled\/php${PHP_VERSION}.conf\r\nmv \/mnt\/server\/apache2\/mods-enabled\/php${OLD_VERSION}.load \/mnt\/server\/apache2\/mods-enabled\/php${PHP_VERSION}.load\r\n\r\nsed -i \"s|LoadModule php_module \/usr\/lib\/apache2\/modules\/libphp${OLD_VERSION}.so|LoadModule php_module \/usr\/lib\/apache2\/modules\/libphp${PHP_VERSION}.so|\" \/mnt\/server\/apache2\/mods-enabled\/php${PHP_VERSION}.load\r\n\r\necho -e \"[SETUP] Updating Apache configuration with server port\"\r\nsed -i '8s\/.*\/\tListen '\"${SERVER_PORT}\"'\/' \/mnt\/server\/apache2\/ports.conf\r\nsed -i '12s\/.*\/\tListen '\"${SERVER_PORT}\"'\/' \/mnt\/server\/apache2\/ports.conf\r\n\r\nsed -i '1s\/.*\/\t<VirtualHost *:'\"${SERVER_PORT}\"'>\/' \/mnt\/server\/apache2\/sites-enabled\/000-default.conf\r\n\r\necho -e \"[SETUP] Writing PHP version to file\"\r\necho \"${PHP_VERSION}\" > \"php_version.txt\"\r\n\r\necho -e \"[SETUP] Installing ionCube loaders\"\r\n\r\n# Create temporary directory for ionCube download\r\nmkdir -p \/mnt\/server\/.tmp\r\n\r\n# Get architecture\r\nARCH=$(uname -m)\r\necho -e \"[INFO] Detected architecture: $ARCH\"\r\n\r\n# Download ionCube loaders based on architecture\r\nif [ \"$ARCH\" = \"x86_64\" ]; then\r\n    echo -e \"[SETUP] Downloading ionCube loader for x86_64\"\r\n    wget -O \/mnt\/server\/.tmp\/ioncube_loaders.tar.gz https:\/\/downloads.ioncube.com\/loader_downloads\/ioncube_loaders_lin_x86-64.tar.gz\r\nelif [ \"$ARCH\" = \"aarch64\" ]; then\r\n    echo -e \"[SETUP] Downloading ionCube loader for aarch64\"\r\n    wget -O \/mnt\/server\/.tmp\/ioncube_loaders.tar.gz https:\/\/downloads.ioncube.com\/loader_downloads\/ioncube_loaders_lin_aarch64.tar.gz\r\nelse\r\n    echo \"Unsupported architecture: $ARCH\"\r\n    exit 1\r\nfi\r\n\r\n# Extract ionCube loaders\r\necho -e \"[SETUP] Extracting ionCube loader\"\r\ntar -zxvf \/mnt\/server\/.tmp\/ioncube_loaders.tar.gz -C \/mnt\/server\/.tmp\/ > \/dev\/null 2>&1\r\n\r\n# Remove loaders that don't match PHP version\r\necho -e \"[SETUP] Removing non-matching ionCube loaders\"\r\nfind \/mnt\/server\/.tmp\/ioncube -type f ! -name \"ioncube_loader_lin_${PHP_VERSION}*.so\" -exec rm -f {} \\;\r\n\r\n# Copy matching ionCube loader to \/mnt\/server\/php\/\r\necho -e \"[SETUP] Copying ionCube loader for PHP $PHP_VERSION\"\r\ncp \/mnt\/server\/.tmp\/ioncube\/ioncube_loader_lin_${PHP_VERSION}*.so \/mnt\/server\/php\/\r\n\r\n# Add the ionCube loader to php.ini\r\necho -e \"[SETUP] Adding ionCube loader to php.ini\"\r\necho \"zend_extension=\/home\/container\/php\/ioncube_loader_lin_${PHP_VERSION}.so\" >> \/mnt\/server\/php\/php.ini\r\n\r\n# Clean up temporary files\r\necho -e \"[SETUP] Cleaning up temporary files\"\r\nrm -rf \/mnt\/server\/.tmp\r\n\r\necho -e \"[SETUP] ionCube loader installed for PHP $PHP_VERSION\"\r\n\r\necho -e \"[SETUP] Configuring Apache to handle PHP requests\"\r\necho \"<FilesMatch \\\\.php$>\r\n    SetHandler \\\"proxy:unix:\/home\/container\/tmp\/php-fpm.sock|fcgi:\/\/${SERVER_IP}:${SERVER_PORT}\\\"\r\n<\/FilesMatch>\" >> \/mnt\/server\/apache2\/apache2.conf\r\n\r\nif [ \"${WORDPRESS}\" == \"true\" ] || [ \"${WORDPRESS}\" == \"1\" ]; then\r\n    echo -e \"[SETUP] Installing WordPress\"\r\n    cd \/mnt\/server\/www\r\n    wget -q http:\/\/wordpress.org\/latest.tar.gz\r\n    tar xzf latest.tar.gz >\/dev\/null 2>&1\r\n    mv wordpress\/* .\r\n    rm -rf wordpress latest.tar.gz\r\n    echo \"[SETUP] WordPress installed at http:\/\/${CLOUDFLARE_TUNNEL_DOMAIN}\/wp-admin\"\r\nelse\r\n    echo \"<?php phpinfo(); ?>\" > \"\/mnt\/server\/www\/index.php\"\r\n    echo \"[SETUP] PHP info page created\"\r\nfi\r\n\r\necho -e \"[DONE] Everything has been installed\"",
+            "container": "debian:bookworm-slim",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Startup Command",
+            "description": "The startup file for Apache.",
+            "env_variable": "STARTUP_CMD",
+            "default_value": ".\/apache2.sh",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:20",
+            "field_type": "text"
+        },
+        {
+            "name": "WordPress",
+            "description": "Enable or disable Wordpress<br> 0 = false (default)<br> 1 = true",
+            "env_variable": "WORDPRESS",
+            "default_value": "0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|boolean",
+            "field_type": "text"
+        },
+        {
+            "name": "PHP Version",
+            "description": "Select the correct PHP version! See the tag behind the Docker image.",
+            "env_variable": "PHP_VERSION",
+            "default_value": "8.1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:3",
+            "field_type": "text"
+        },
+        {
+            "name": "Cloudflare Tunnel token",
+            "description": "The authentication token required to connect to Cloudflare's Tunnel service typically starts with ey....",
+            "env_variable": "CLOUDFLARED_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|regex:\/^[A-Za-z0-9_-]+$\/",
+            "field_type": "text"
+        },
+        {
+            "name": "Startup command Cloudflared",
+            "description": "The startup file for Cloudflared.",
+            "env_variable": "STARTUP_COMMAND_CLOUDFLARED",
+            "default_value": ".\/cloudflare.sh",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        },
+        {
+            "name": "CLOUDFLARE TUNNEL DOMAIN",
+            "description": "Domain for adding",
+            "env_variable": "CLOUDFLARE_TUNNEL_DOMAIN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string",
+            "field_type": "text"
+        }
+    ]
+}
